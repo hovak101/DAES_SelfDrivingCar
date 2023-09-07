@@ -40,7 +40,7 @@ try:
     totalSize = result.size
 
     percentClose = numClose/totalSize
-    #print(str(percentClose) + "%")
+    print(str(percentClose) + "%")
 
     end_time = time.perf_counter()
     execution_time = end_time - start_time
