@@ -1,11 +1,12 @@
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
-import time
+
+greyscale_threshold = 180
 
 def getDisparity(bSize, imgLeft, imgRight):
     # Initialize the stereo block matching object 
-    SBMObj = cv2.StereoBM_create(numDisparities=32, blockSize=bSize)
+    SBMObj = cv2.StereoBM_create(numDisparities=16, blockSize=bSize)
 
     # Compute the disparity image
     disparity = SBMObj.compute(imgLeft, imgRight)
@@ -18,19 +19,16 @@ def getDisparity(bSize, imgLeft, imgRight):
     return disparity
 
 try:
-    start_time = time.perf_counter()
-
-    greyscale_threshold = 180
-    imgLeft = cv2.imread('limg.ppm', 0)
-    imgRight = cv2.imread('rimg.ppm', 0)
+    imgLeft = cv2.imread('test_data/chess_left.png', cv2.IMREAD_GRAYSCALE)
+    imgRight = cv2.imread('test_data/chess_right.png', cv2.IMREAD_GRAYSCALE)
 
     if imgLeft.shape[0] != imgRight.shape[0]:
         raise Exception("Left and right image heights are not the same.")
     if imgLeft.shape[1] != imgRight.shape[1]:
         raise Exception("Left and right image widths are not the same.")
-    
+
     # bSize has to be an odd number
-    result = getDisparity(35, imgLeft, imgRight) 
+    result = getDisparity(5, imgLeft, imgRight) 
 
     # boolean mask
     above_threshold = result > greyscale_threshold
@@ -42,9 +40,6 @@ try:
     percentClose = numClose/totalSize
     print(str(percentClose) + "%")
 
-    end_time = time.perf_counter()
-    execution_time = end_time - start_time
-    print(f"The execution time is: {execution_time}")
     plt.imshow(result, 'gray') 
     plt.axis('off')
     plt.show()
