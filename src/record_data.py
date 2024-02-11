@@ -19,49 +19,82 @@ import cv2
 import threading
 import time
 
-# front left
-f_ena = PWMLED(13)
-f_in1 = LED(27)
-f_in2 = LED(22)
-
-# front right
-f_enb = PWMLED(19)
-f_in3 = LED(17)
-f_in4 = LED(4)
-
-# back left
-b_ena = PWMLED(12)
-b_in1 = LED(14)
-# b_in2 = LED()
-
-# back right
-b_enb = PWMLED(18)
-b_in3 = LED(15)
-# b_in4 = LED()
-
 class MyController(Controller):
+    # front left gpio
+    F_ENA = PWMLED(13)
+    F_IN1 = LED(27)
+    F_IN2 = LED(22)
+
+    # front right gpio
+    F_ENB = PWMLED(19)
+    F_IN3 = LED(17)
+    F_IN4 = LED(4)
+
+    # back left gpio
+    B_ENB = PWMLED(18)
+    B_IN3 = LED(15)
+    # B_IN4 = LED() waiting on jumper cable
+
+    # back right gpio
+    B_ENA = PWMLED(12)
+    B_IN1 = LED(14)
+    # B_IN2 = LED() waiting on jumper cable
+    
     def __init__(self, **kwargs):
         Controller.__init__(self, **kwargs)
         self.recording = False
         self.vid = None
         self.count = 0
-        # Create a lock for thread-safe operations
+        # create a lock for thread-safe operations
         self.lock = threading.Lock()
+        
+        # PWM straight line speed for all motors; decimal value from 0 to 1
+        self.speed = 0
+
+        # the relative speeds for the left and right sides; decimal values from 0 to 1
+        self.relative_left_speed = 1
+        self.relative_right_speed = 1
+
+        # reversing boolean
+        self.reverse = False
+        
+        self.update_pins()
 
     def on_triangle_press(self):
         with self.lock:
             self.recording = not self.recording
             if self.recording:
                 self.vid = cv2.VideoCapture(0)
-                # Start the background thread for capturing frames
+                # start the background thread for capturing frames
                 threading.Thread(target=self.capture_frames, daemon=True).start()
             else:
-                # Release the video capture object
+                # release the video capture object
                 self.vid.release()
 
     def on_R2_press(self, value):
-        pwm = self.R2_to_PWM(value)
+        self.speed = self.R2_to_PWM(value)
+        print(self.speed)
+        self.update_pins()
         
+    def on_R2_release(self):
+        self.speed = 0
+        self.update_pins()
+    
+    def on_L3_left(self, value):
+        self.relative_left_speed = self.L3_to_relative(value)
+        print(self.relative_left_speed)
+        self.update_pins()
+        
+    def on_L3_right(self, value):
+        self.relative_right_speed = self.L3_to_relative(value)
+        print(self.relative_right_speed)
+        self.update_pins()
+        
+    def on_L3_x_at_rest(self):
+        self.relative_left_speed = 1
+        self.relative_right_speed = 1
+        print(self.relative_left_speed, self.relative_right_speed)
+        self.update_pins()
     
     def capture_frames(self):
         while self.recording:
@@ -71,12 +104,48 @@ class MyController(Controller):
                     file_path = f"../data/frames/frame_{self.count}.jpg"
                     cv2.imwrite(file_path, frame)
                     self.count += 1
-            # Add a small delay to give time back to the main thread
+            # add a small delay to give time back to the main thread
             time.sleep(0.1)
 
     def R2_to_PWM(self, value):
         return (value + 32767) / 65534
         
+    def L3_to_relative(self, value):
+        return 1 - abs(value) / 32767
+    
+    def update_pins(self):
+        if self.reverse:
+            self.F_IN1.off()
+            self.F_IN2.on()
+            
+            self.F_IN3.off()
+            self.F_IN4.on()
+            
+            self.B_IN1.off()
+            # self.B_IN2.on() waiting on jumper wire
+            
+            self.B_IN3.off()
+            # self.B_IN4.on() waiting on jumper wire
+        else:
+            self.F_IN1.on()
+            self.F_IN2.off()
+            
+            self.F_IN3.on()
+            self.F_IN4.off()
+            
+            self.B_IN1.on()
+            # self.B_IN2.off() waiting on jumper wire
+            
+            self.B_IN3.on()
+            # self.B_IN4.off() waiting on jumper wire
+        
+        # left speed
+        self.F_ENA.value = self.speed * self.relative_left_speed
+        self.B_ENB.value = self.speed * self.relative_left_speed
+        
+        # right speed
+        self.F_ENB.value = self.speed * self.relative_right_speed
+        self.B_ENA.value = self.speed * self.relative_right_speed
         
 if __name__ == "__main__":
     controller = MyController(interface="/dev/input/js0", connecting_using_ds4drv=False)
