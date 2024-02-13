@@ -1,0 +1,10 @@
+colorzero==2.0
+gpiozero==2.0
+lgpio==0.0.0.2
+numpy==1.26.3
+opencv-python==4.9.0.80
+pigpio==1.78
+pyPS4Controller==1.2.5
+pyserial==3.5
+pyudev==0.24.1
+RPi.GPIO==0.7.1
