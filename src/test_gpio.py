@@ -23,21 +23,21 @@ b_in1 = LED(14)
 
 try:
     while True:
-        # f_ena.value = 0.5
-        # f_in1.on()
-        # f_in2.off()
+        f_ena.value = 0.5
+        f_in1.on()
+        f_in2.off()
         
-        # f_enb.value = 0.5
-        # f_in3.on()
-        # f_in4.off()
+        f_enb.value = 0.5
+        f_in3.on()
+        f_in4.off()
         
         b_ena.value = 0.5
         b_in1.on()
         # b_in2.off()
         
-        # b_enb.value = 0.5
-        # b_in3.on()
-        # # b_in4.off()
+        b_enb.value = 0.5
+        b_in3.on()
+        # b_in4.off()
         
         sleep(1)
 except KeyboardInterrupt:

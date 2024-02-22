@@ -18,6 +18,8 @@ from gpiozero import LED, PWMLED
 import cv2
 import threading
 import time
+import os 
+from dotenv import load_dotenv
 
 class MyController(Controller):
     # front left gpio
@@ -42,6 +44,8 @@ class MyController(Controller):
     
     def __init__(self, **kwargs):
         Controller.__init__(self, **kwargs)
+        load_dotenv()
+        
         self.recording = False
         self.vid = None
         self.count = 0
@@ -101,7 +105,8 @@ class MyController(Controller):
             with self.lock:
                 ret, frame = self.vid.read()
                 if ret:
-                    file_path = f"../data/frames/frame_{self.count}.jpg"
+                    file_path = os.path.join(os.getenv('ROOT_DIR'), 'data', 
+                                             'frames', f'frame_{self.count}.jpg')
                     cv2.imwrite(file_path, frame)
                     self.count += 1
             # add a small delay to give time back to the main thread
