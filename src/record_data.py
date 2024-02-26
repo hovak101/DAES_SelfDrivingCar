@@ -20,6 +20,7 @@ import threading
 import time
 import os 
 from dotenv import load_dotenv
+import csv
 
 class MyController(Controller):
     # front left gpio
@@ -46,9 +47,24 @@ class MyController(Controller):
         Controller.__init__(self, **kwargs)
         load_dotenv()
         
+        # delete contents of csv file and define column names
+        self.csv_file =  open(os.path.join(os.getenv('ROOT_DIR'), 'data', 'act_values.csv'), 'w')
+        self.writer = csv.writer(self.csv_file)
+        field = ['frame_id', 'front_left', 'back_left', 'front_right', 'back_right']
+        self.writer.writerow(field)
+            
+        # delete contents of frames folder
+        frames_directory = os.path.join(os.getenv('ROOT_DIR'), 'data', 'frames')
+        frames_files = os.listdir(frames_directory)
+        for file in frames_files:
+            file_path = os.path.join(frames_directory, file)
+            os.remove(file_path)
+            
         self.recording = False
         self.vid = None
         self.count = 0
+        self.time_between_frames = 1 / int(os.getenv('FPS'))
+        
         # create a lock for thread-safe operations
         self.lock = threading.Lock()
         
@@ -102,15 +118,32 @@ class MyController(Controller):
     
     def capture_frames(self):
         while self.recording:
+            start = time.time()
+            
             with self.lock:
                 ret, frame = self.vid.read()
                 if ret:
                     file_path = os.path.join(os.getenv('ROOT_DIR'), 'data', 
-                                             'frames', f'frame_{self.count}.jpg')
+                                            'frames', f'frame_{self.count}.jpg')
                     cv2.imwrite(file_path, frame)
+                    
+                    # act values
+                    frame_id = self.count
+                    front_left = self.speed * self.relative_left_speed
+                    back_left = self.speed * self.relative_left_speed
+                    front_right = self.speed * self.relative_right_speed
+                    back_right = self.speed * self.relative_right_speed
+                    
+                    self.writer.writerow([frame_id, front_left, back_left, front_right, back_right])
                     self.count += 1
-            # add a small delay to give time back to the main thread
-            time.sleep(0.1)
+            
+            end = time.time()
+            elapsed = end - start
+            
+            if elapsed < self.time_between_frames:
+                time.sleep(self.time_between_frames - elapsed)
+            else:
+                print("ERROR: GONE OVERTIME")
 
     def R2_to_PWM(self, value):
         return (value + 32767) / 65534
