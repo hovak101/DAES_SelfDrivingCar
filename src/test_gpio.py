@@ -14,30 +14,30 @@ f_in4 = LED(4)
 # back left
 b_enb = PWMLED(18)
 b_in3 = LED(15)
-# b_in4 = LED()
+b_in4 = LED(24)
 
 # back right
 b_ena = PWMLED(12)
 b_in1 = LED(14)
-# b_in2 = LED()
+b_in2 = LED(23)
 
 try:
     while True:
         f_ena.value = 0.5
-        f_in1.on()
-        f_in2.off()
+        f_in1.off()
+        f_in2.on()
         
         f_enb.value = 0.5
-        f_in3.on()
-        f_in4.off()
+        f_in3.off()
+        f_in4.on()
         
         b_ena.value = 0.5
-        b_in1.on()
-        # b_in2.off()
+        b_in1.off()
+        b_in2.on()
         
         b_enb.value = 0.5
-        b_in3.on()
-        # b_in4.off()
+        b_in3.off()
+        b_in4.on()
         
         sleep(1)
 except KeyboardInterrupt:
