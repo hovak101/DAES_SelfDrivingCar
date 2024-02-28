@@ -48,13 +48,13 @@ class MyController(Controller):
         load_dotenv()
         
         # delete contents of csv file and define column names
-        self.csv_file =  open(os.path.join(os.getenv('ROOT_DIR'), 'data', 'act_values.csv'), 'w')
+        self.csv_file =  open(os.path.join(os.getenv('ROOT_DIR_PI'), 'data', 'act_values.csv'), 'w')
         self.writer = csv.writer(self.csv_file)
         field = ['frame_id', 'front_left', 'back_left', 'front_right', 'back_right']
         self.writer.writerow(field)
             
         # delete contents of frames folder
-        frames_directory = os.path.join(os.getenv('ROOT_DIR'), 'data', 'frames')
+        frames_directory = os.path.join(os.getenv('ROOT_DIR_PI'), 'data', 'frames')
         frames_files = os.listdir(frames_directory)
         for file in frames_files:
             file_path = os.path.join(frames_directory, file)
@@ -133,7 +133,7 @@ class MyController(Controller):
             with self.lock:
                 ret, frame = self.vid.read()
                 if ret:
-                    file_path = os.path.join(os.getenv('ROOT_DIR'), 'data', 
+                    file_path = os.path.join(os.getenv('ROOT_DIR_PI'), 'data', 
                                             'frames', f'frame_{self.count}.jpg')
                     cv2.imwrite(file_path, frame)
                     
