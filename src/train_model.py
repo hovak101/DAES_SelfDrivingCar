@@ -19,18 +19,23 @@ from keras import layers
 
 load_dotenv()
 
+# convert csv actuator values to numpy array
 with open(os.path.join(os.getenv('ROOT_DIR_PC'), 'data', 'act_values.csv'), 'r') as file:
     reader = csv.reader(file)
     data = list(reader)
     act_vals = np.array(data[1:], dtype=float)
 
-frames = np.array([])
 frames_dir = os.path.join(os.getenv('ROOT_DIR_PC'), 'data', 'frames')
+frames = []
 
 for img_name in os.listdir(frames_dir):
+    # create numpy array from image
     img_path = os.path.join(frames_dir, img_name)
     img = Image.open(img_path)
     np_img = np.asarray(img)
-    print(np_img.shape)
-    np.append(frames, np_img)
-    print(frames.shape())
+    
+    # add numpy image to frames
+    frames.append(np_img)
+    
+# convert list of numpy arrays to numpy array
+frames = np.array(frames)
