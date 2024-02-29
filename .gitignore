@@ -1,3 +1,4 @@
 rc_env
 data
 .env.private
+model_weights.h5

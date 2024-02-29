@@ -25,6 +25,7 @@ with open(os.path.join(os.getenv('ROOT_DIR_PC'), 'data', 'act_values.csv'), 'r')
     reader = csv.reader(file)
     data = list(reader)
     act_vals = np.array(data[1:], dtype=float)
+    act_vals = act_vals[:,1:]
 
 frames_dir = os.path.join(os.getenv('ROOT_DIR_PC'), 'data', 'frames')
 frames = []
@@ -69,7 +70,7 @@ model = Sequential([
     GlobalAveragePooling2D(),
     Dense(512, activation='relu'),
     Dropout(0.5),
-    Dense(5, activation='sigmoid')
+    Dense(4, activation='sigmoid')
 ])
 
 model.compile(optimizer='adam', loss='mse')
@@ -79,3 +80,5 @@ early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1,
 
 model.fit(frames, act_vals, epochs=100, batch_size=8, validation_split=0.2, 
                                 callbacks=[early_stopping])
+
+model.save_weights('model_weights.h5')
