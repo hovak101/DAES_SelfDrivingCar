@@ -68,11 +68,3 @@ class RcDriver:
             # back right forward
             self.B_IN1.on()
             self.B_IN2.off()
-        
-        
-# TODO: Remove this main when done testing
-if __name__ == "__main__":
-    rc_driver = RcDriver()
-    while True:
-        rc_driver.set_pins(1, 1, True, False)
-    

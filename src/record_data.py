@@ -58,8 +58,6 @@ class MyController(Controller):
 
         self.left_speed = None
         self.right_speed = None
-        self.left_reverse = False
-        self.right_reverse = False
         
         # determines when to switch opposite sided motors to reverse for turns;
         # decimal values from 0 to 1
@@ -79,7 +77,7 @@ class MyController(Controller):
                 self.vid.release()
 
     def on_R2_press(self, value):
-        self.speed = self.trigger_to_PWM(value)
+        self.speed = self.trigger_to_percent(value)
         self.update_pins()
         
     def on_R2_release(self):
@@ -87,8 +85,7 @@ class MyController(Controller):
         self.update_pins()
     
     def on_L2_press(self, value):
-        self.reverse = True
-        self.speed = -1 * self.trigger_to_PWM(value)
+        self.speed = -1 * self.trigger_to_percent(value)
         self.update_pins()
     
     def on_L2_release(self):
@@ -128,14 +125,18 @@ class MyController(Controller):
             if elapsed < self.time_between_frames:
                 time.sleep(self.time_between_frames - elapsed)
 
-    def trigger_to_PWM(self, value):
+    # converts trigger range of [-32767, 32767] to [0, 1]
+    def trigger_to_percent(self, value):
         return (value + 32767) / 65534
         
+    # converts L3 drift range of [0, 32767] to [drift_percent - 1, drift_percent]
     def L3_to_relative(self, value):
-        # print("percent offset:", abs(value) / 16384)
-        # print("relative speed:", self.reverse_turn_percent - abs(value) / 16384)
         return self.reverse_turn_percent - abs(value) / 32767
                 
+    def update_speeds(self):
+        self.left_speed = self.speed * self.relative_left_speed
+        self.right_speed = self.speed * self.relative_right_speed
+        
     def convert_to_pwm(self):
         left_reverse = False
         right_reverse = False
@@ -152,6 +153,7 @@ class MyController(Controller):
         return left_pwm, right_pwm, left_reverse, right_reverse
     
     def update_pins(self):
+        self.update_speeds()
         left_pwm, right_pwm, left_reverse, right_reverse = self.convert_to_pwm()
         self.rc_driver.set_pins(left_pwm, right_pwm, left_reverse, right_reverse)
         
