@@ -78,7 +78,13 @@ model.compile(optimizer='adam', loss='mse')
 early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1, 
                                mode='min', restore_best_weights=True)
 
-model.fit(frames, act_vals, epochs=100, batch_size=8, validation_split=0.2, 
+model.fit(frames, act_vals, epochs=10, batch_size=8, validation_split=0.2, 
                                 callbacks=[early_stopping])
 
-model.save_weights('model_weights.h5')
+# Convert to tensorflow lite model for the raspberry pi
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+tflite_model = converter.convert()
+
+# Save the TFLite model to a file
+with open(os.path.join(os.getenv('ROOT_DIR_PC'), 'model.tflite'), 'wb') as f:
+    f.write(tflite_model)
