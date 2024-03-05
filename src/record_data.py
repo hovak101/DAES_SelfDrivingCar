@@ -136,15 +136,8 @@ class MyController(Controller):
                     file_path = os.path.join(os.getenv('ROOT_DIR_PI'), 'data', 
                                             'frames', f'frame_{self.count}.jpg')
                     cv2.imwrite(file_path, frame)
-                    
-                    # act values
-                    frame_id = self.count
-                    front_left = self.speed * self.relative_left_speed
-                    back_left = self.speed * self.relative_left_speed
-                    front_right = self.speed * self.relative_right_speed
-                    back_right = self.speed * self.relative_right_speed
-                    
-                    self.writer.writerow([frame_id, front_left, back_left, front_right, back_right])
+                  
+                    self.writer.writerow([self.count, self.F_ENA, self.B_ENB, self.F_ENB, self.B_ENA])
                     self.count += 1
             
             end = time.time()
@@ -203,6 +196,9 @@ class MyController(Controller):
                 raise Exception("Error switching motor direction: Motor is neither moving forward nor backward")
                 
     def update_pins(self):
+        # TODO: Simplify this so that its simply that the speed and relative speed can both either be positive or negative, and that the sign of the product
+        # determines the direction of the spin with some if statements. No need for this switch direction thing. Also, for the reversal percent, that means
+        # that instead of the reversal percent should somehow determine the threshold rather than the sign of the product as mentioned above. 
         if self.reverse:
             self.F_IN1.off()
             self.F_IN2.on()
