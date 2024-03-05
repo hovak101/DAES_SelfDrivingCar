@@ -2,3 +2,4 @@ rc_env
 data
 .env.private
 model.tflite
+__pycache__/
