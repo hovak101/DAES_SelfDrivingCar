@@ -14,7 +14,7 @@
 #           so the values should be from 0 to 1.
 
 from pyPS4Controller.controller import Controller
-from gpiozero import LED, PWMLED
+from rcDriverController import RcDriver
 import cv2
 import threading
 import time
@@ -23,26 +23,7 @@ from dotenv import load_dotenv
 import csv
 
 class MyController(Controller):
-    # front left gpio
-    F_ENA = PWMLED(13)
-    F_IN1 = LED(27)
-    F_IN2 = LED(22)
-
-    # front right gpio
-    F_ENB = PWMLED(19)
-    F_IN3 = LED(17)
-    F_IN4 = LED(4)
-
-    # back left gpio
-    B_ENB = PWMLED(18)
-    B_IN3 = LED(15)
-    B_IN4 = LED(24) 
-    
-    # back right gpio
-    B_ENA = PWMLED(12)
-    B_IN1 = LED(14)
-    B_IN2 = LED(23)
-    
+   
     def __init__(self, **kwargs):
         Controller.__init__(self, **kwargs)
         load_dotenv()
@@ -75,14 +56,16 @@ class MyController(Controller):
         self.relative_left_speed = 1
         self.relative_right_speed = 1
 
+        self.left_speed = None
+        self.right_speed = None
+        self.left_reverse = False
+        self.right_reverse = False
+        
         # determines when to switch opposite sided motors to reverse for turns;
         # decimal values from 0 to 1
         self.reverse_turn_percent = 0.8
         
-        # reversing boolean
-        self.reverse = False
-        
-        self.update_pins()
+        self.rc_driver = RcDriver()
 
     def on_triangle_press(self):
         with self.lock:
@@ -105,11 +88,10 @@ class MyController(Controller):
     
     def on_L2_press(self, value):
         self.reverse = True
-        self.speed = self.trigger_to_PWM(value)
+        self.speed = -1 * self.trigger_to_PWM(value)
         self.update_pins()
     
     def on_L2_release(self):
-        self.reverse = False
         self.speed = 0
         self.update_pins()
         
@@ -153,92 +135,25 @@ class MyController(Controller):
         # print("percent offset:", abs(value) / 16384)
         # print("relative speed:", self.reverse_turn_percent - abs(value) / 16384)
         return self.reverse_turn_percent - abs(value) / 32767
-    
-    def switch_motor_direction(self, motor_id):
-        if motor_id == 'FL':
-            if self.F_IN1.value == 0 and self.F_IN2.value == 1:
-                self.F_IN1.on()
-                self.F_IN2.off()
-            elif self.F_IN1.value == 1 and self.F_IN2.value == 0:
-                self.F_IN1.off()
-                self.F_IN2.on()
-            else:
-                raise Exception("Error switching motor direction: Motor is neither moving forward nor backward") 
-                    
-        elif motor_id == 'FR':
-            if self.F_IN3.value == 0 and self.F_IN4.value == 1:
-                self.F_IN3.on()
-                self.F_IN4.off()
-            elif self.F_IN3.value == 1 and self.F_IN4.value == 0:
-                self.F_IN3.off()
-                self.F_IN4.on()
-            else:
-                raise Exception("Error switching motor direction: Motor is neither moving forward nor backward")
-        
-        elif motor_id == 'BL':
-            if self.B_IN3.value == 0 and self.B_IN4.value == 1:
-                self.B_IN3.on()
-                self.B_IN4.off()
-            elif self.B_IN3.value == 1 and self.B_IN4.value == 0:
-                self.B_IN3.off()
-                self.B_IN4.on()
-            else:
-                raise Exception("Error switching motor direction: Motor is neither moving forward nor backward")
-            
-        elif motor_id == 'BR':
-            if self.B_IN1.value == 0 and self.B_IN2.value == 1:
-                self.B_IN1.on()
-                self.B_IN2.off()
-            elif self.B_IN1.value == 1 and self.B_IN2.value == 0:
-                self.B_IN1.off()
-                self.B_IN2.on()
-            else:
-                raise Exception("Error switching motor direction: Motor is neither moving forward nor backward")
                 
+    def convert_to_pwm(self):
+        left_reverse = False
+        right_reverse = False
+        
+        if self.left_speed < 0:
+            left_reverse = True
+        
+        if self.right_speed < 0:
+            right_reverse = True
+            
+        left_pwm = abs(self.left_speed)
+        right_pwm = abs(self.right_speed)
+        
+        return left_pwm, right_pwm, left_reverse, right_reverse
+    
     def update_pins(self):
-        # TODO: Simplify this so that its simply that the speed and relative speed can both either be positive or negative, and that the sign of the product
-        # determines the direction of the spin with some if statements. No need for this switch direction thing. Also, for the reversal percent, that means
-        # that instead of the reversal percent should somehow determine the threshold rather than the sign of the product as mentioned above. 
-        if self.reverse:
-            self.F_IN1.off()
-            self.F_IN2.on()
-            
-            self.F_IN3.off()
-            self.F_IN4.on()
-            
-            self.B_IN1.off()
-            self.B_IN2.on()
-            
-            self.B_IN3.off()
-            self.B_IN4.on()
-        else:
-            self.F_IN1.on()
-            self.F_IN2.off()
-            
-            self.F_IN3.on()
-            self.F_IN4.off()
-            
-            self.B_IN1.on()
-            self.B_IN2.off()
-            
-            self.B_IN3.on()
-            self.B_IN4.off()
-        
-        # left speed
-        if self.relative_left_speed < 0:
-            self.switch_motor_direction('FL')
-            self.switch_motor_direction('BL')
-            
-        self.F_ENA.value = self.speed * abs(self.relative_left_speed)
-        self.B_ENB.value = self.speed * abs(self.relative_left_speed)
-        
-        # right speed
-        if self.relative_right_speed < 0: 
-            self.switch_motor_direction('FR')
-            self.switch_motor_direction('BR')
-        
-        self.F_ENB.value = self.speed * abs(self.relative_right_speed)
-        self.B_ENA.value = self.speed * abs(self.relative_right_speed)
+        left_pwm, right_pwm, left_reverse, right_reverse = self.convert_to_pwm()
+        self.rc_driver.set_pins(left_pwm, right_pwm, left_reverse, right_reverse)
         
 if __name__ == "__main__":
     controller = MyController(interface="/dev/input/js0", connecting_using_ds4drv=False)

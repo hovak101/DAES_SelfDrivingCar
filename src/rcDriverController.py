@@ -27,7 +27,7 @@ class RcDriver:
     # def __init__(self):
     #     pass
         
-    def update_pins(self, left_pwm, right_pwm, reverse_left, reverse_right):
+    def set_pins(self, left_pwm, right_pwm, reverse_left, reverse_right):
         self.F_ENA.value = left_pwm
         self.B_ENB.value = left_pwm
         self.F_ENB.value = right_pwm
@@ -58,7 +58,7 @@ class RcDriver:
             
             # back right reverse
             self.B_IN1.off()
-            self.B_IN1.on()
+            self.B_IN2.on()
         
         else:
             # front right forward
@@ -67,5 +67,12 @@ class RcDriver:
             
             # back right forward
             self.B_IN1.on()
-            self.B_IN1.off()
+            self.B_IN2.off()
         
+        
+# TODO: Remove this main when done testing
+if __name__ == "__main__":
+    rc_driver = RcDriver()
+    while True:
+        rc_driver.set_pins(1, 1, True, False)
+    
