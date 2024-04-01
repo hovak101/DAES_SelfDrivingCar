@@ -116,7 +116,8 @@ class MyController(Controller):
                                             'frames', f'frame_{self.count}.jpg')
                     cv2.imwrite(file_path, frame)
                   
-                    self.writer.writerow([self.count, self.F_ENA, self.B_ENB, self.F_ENB, self.B_ENA])
+                    self.writer.writerow([self.count, self.rc_driver.F_ENA, 
+                        self.rc_driver.B_ENB, self.rc_driver.F_ENB, self.rc_driver.B_ENA])
                     self.count += 1
             
             end = time.time()
