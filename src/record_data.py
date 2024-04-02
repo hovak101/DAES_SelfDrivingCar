@@ -21,6 +21,8 @@ import time
 import os 
 from dotenv import load_dotenv
 import csv
+import subprocess
+
 
 class MyController(Controller):
    
@@ -64,6 +66,9 @@ class MyController(Controller):
         self.reverse_turn_percent = 0.8
         
         self.rc_driver = RcDriver()
+
+        # set camera presets
+        subprocess.call(os.path.join(os.getenv('ROOT_DIR_PI'), 'scripts', 'set_camera_preset.sh'), shell=True)
 
     def on_triangle_press(self):
         with self.lock:
@@ -116,8 +121,9 @@ class MyController(Controller):
                                             'frames', f'frame_{self.count}.jpg')
                     cv2.imwrite(file_path, frame)
                   
-                    self.writer.writerow([self.count, self.rc_driver.F_ENA, 
-                        self.rc_driver.B_ENB, self.rc_driver.F_ENB, self.rc_driver.B_ENA])
+                    self.writer.writerow([self.count, self.rc_driver.F_ENA.value, 
+                        self.rc_driver.B_ENB.value, self.rc_driver.F_ENB.value, 
+                        self.rc_driver.B_ENA.value])
                     self.count += 1
             
             end = time.time()
