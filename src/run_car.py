@@ -17,8 +17,8 @@ import subprocess
 
 load_dotenv()
 
-# set camera presets
-subprocess.call(os.path.join(os.getenv('ROOT_DIR_PI'), 'scripts', 'set_camera_preset.sh'), shell=True)
+# # set camera presets
+# subprocess.call(os.path.join(os.getenv('ROOT_DIR_PI'), 'scripts', 'set_camera_preset.sh'), shell=True)
 
 os.path.join(os.getenv('ROOT_DIR_PI'), 'model.tflite')
 # Load the TFLite model and allocate tensors

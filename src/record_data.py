@@ -67,16 +67,21 @@ class MyController(Controller):
         
         self.rc_driver = RcDriver()
 
-        # set camera presets
-        subprocess.call(os.path.join(os.getenv('ROOT_DIR_PI'), 'scripts', 'set_camera_preset.sh'), shell=True)
+        # # set camera presets
+        # subprocess.call(os.path.join(os.getenv('ROOT_DIR_PI'), 'scripts', 'set_camera_preset.sh'), shell=True)
 
     def on_triangle_press(self):
         with self.lock:
             self.recording = not self.recording
             if self.recording:
+                
                 self.vid = cv2.VideoCapture(0)
-                # start the background thread for capturing frames
-                threading.Thread(target=self.capture_frames, daemon=True).start()
+                try:
+                    # start the background thread for capturing frames
+                    threading.Thread(target=self.capture_frames, daemon=True).start()
+                except Exception as e:
+                    print("Error:", e)
+                    self.vid.release()
             else:
                 # release the video capture object
                 self.vid.release()
@@ -112,18 +117,24 @@ class MyController(Controller):
     
     def capture_frames(self):
         while self.recording:
+            # First need to buffer one image before applying camera preset
+            if self.count == 1: 
+                subprocess.check_call(os.path.join(
+                    os.getenv('ROOT_DIR_PI'), 'scripts', 
+                    'set_camera_preset.sh'), shell=True)
             start = time.time()
             
             with self.lock:
                 ret, frame = self.vid.read()
                 if ret:
-                    file_path = os.path.join(os.getenv('ROOT_DIR_PI'), 'data', 
-                                            'frames', f'frame_{self.count}.jpg')
-                    cv2.imwrite(file_path, frame)
-                  
-                    self.writer.writerow([self.count, self.rc_driver.F_ENA.value, 
-                        self.rc_driver.B_ENB.value, self.rc_driver.F_ENB.value, 
-                        self.rc_driver.B_ENA.value])
+                    if self.count > 0:
+                        file_path = os.path.join(os.getenv('ROOT_DIR_PI'), 'data', 
+                                                'frames', f'frame_{self.count}.jpg')
+                        cv2.imwrite(file_path, frame)
+                    
+                        self.writer.writerow([self.count, self.rc_driver.F_ENA.value, 
+                            self.rc_driver.B_ENB.value, self.rc_driver.F_ENB.value, 
+                            self.rc_driver.B_ENA.value])
                     self.count += 1
             
             end = time.time()
