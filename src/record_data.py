@@ -46,7 +46,10 @@ class MyController(Controller):
         self.recording = False
         self.vid = None
         self.count = 0
-        self.time_between_frames = 1 / int(os.getenv('FPS'))
+        print('FPS', os.getenv('FPS'))
+        print('FPS2', int(os.getenv('FPS')))
+        self.time_between_frames = 1. / int(os.getenv('FPS'))
+        print(self.time_between_frames)
         
         # create a lock for thread-safe operations
         self.lock = threading.Lock()
@@ -75,7 +78,7 @@ class MyController(Controller):
             self.recording = not self.recording
             if self.recording:
                 
-                self.vid = cv2.VideoCapture(0)
+                self.vid = cv2.VideoCapture(-1)
                 try:
                     # start the background thread for capturing frames
                     threading.Thread(target=self.capture_frames, daemon=True).start()
@@ -116,32 +119,37 @@ class MyController(Controller):
         self.update_pins()
     
     def capture_frames(self):
+        prev = time.time()
+
         while self.recording:
-            # First need to buffer one image before applying camera preset
-            if self.count == 1: 
-                subprocess.check_call(os.path.join(
-                    os.getenv('ROOT_DIR_PI'), 'scripts', 
-                    'set_camera_preset.sh'), shell=True)
-            start = time.time()
-            
-            with self.lock:
-                ret, frame = self.vid.read()
-                if ret:
-                    if self.count > 0:
-                        file_path = os.path.join(os.getenv('ROOT_DIR_PI'), 'data', 
-                                                'frames', f'frame_{self.count}.jpg')
-                        cv2.imwrite(file_path, frame)
-                    
-                        self.writer.writerow([self.count, self.rc_driver.F_ENA.value, 
-                            self.rc_driver.B_ENB.value, self.rc_driver.F_ENB.value, 
-                            self.rc_driver.B_ENA.value])
-                    self.count += 1
-            
-            end = time.time()
-            elapsed = end - start
-            
-            if elapsed < self.time_between_frames:
-                time.sleep(self.time_between_frames - elapsed)
+            time_elapsed = time.time() - prev
+            ret, frame = self.vid.read()
+
+            if time_elapsed > self.time_between_frames:
+                # Must buffer one image before applying camera preset
+                if self.count == 1: 
+                    # subprocess.check_call(os.path.join(
+                    #     os.getenv('ROOT_DIR_PI'), 'scripts', 
+                    #     'set_camera_preset.sh'), shell=True)
+                    pass
+                
+                with self.lock:
+                    if ret:
+                        if self.count > 0:
+                            file_path = os.path.join(os.getenv('ROOT_DIR_PI'), 'data', 
+                                                    'frames', f'frame_{self.count}.jpg')
+                            cv2.imwrite(file_path, frame)
+                            self.writer.writerow([self.count, self.rc_driver.F_ENA.value, 
+                                self.rc_driver.B_ENB.value, self.rc_driver.F_ENB.value, 
+                                self.rc_driver.B_ENA.value])
+                            
+                        self.count += 1
+                        # cv2.imshow('frame', frame)
+                # cv2.waitKey(1)
+                prev = time.time()
+
+        # print("camera recording stopped")
+        # cv2.destroyAllWindows()
 
     # converts trigger range of [-32767, 32767] to [0, 1]
     def trigger_to_percent(self, value):

@@ -2,6 +2,7 @@ import cv2
 import subprocess
 from dotenv import load_dotenv
 import os
+import time
 
 load_dotenv()
 
@@ -9,6 +10,7 @@ count = 0
 vid = cv2.VideoCapture(0)
 
 while True: 
+    # Must buffer one image before applying camera preset
     if count == 1: 
         subprocess.check_call(os.path.join(
             os.getenv('ROOT_DIR_PI'), 'scripts', 
@@ -28,6 +30,7 @@ while True:
     # desired button of your choice 
     if cv2.waitKey(1) & 0xFF == ord('q'): 
         break
+    
     count += 1
   
 # After the loop release the cap object 
